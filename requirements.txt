@@ -1,0 +1,8 @@
+Para instalar todos los requerimientos usar el siguiente comando:
+pip install -r requirements.txt
+REQUIREMENTS
+ultralytics==8.2.0
+opencv-python==4.9.0.80
+mysql-connector-python==8.4.0
+face-recognition==1.3.0
+cmake==3.29.2
