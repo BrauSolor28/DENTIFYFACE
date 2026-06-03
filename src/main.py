@@ -12,6 +12,7 @@ import time
 import os
 import mysql.connector
 import time
+import shutil
 from ultralytics import YOLO
 
 # =========================================================
@@ -75,7 +76,15 @@ for nombre_archivo in os.listdir(carpeta_fotos):
             
             nombres_a_ids[nombre_persona] = id_persona
         else:
-            print(f"[ADVERTENCIA] No se detectó rostro en: {nombre_archivo}")
+            print(f"[ADVERTENCIA] Calidad insuficiente o rostro no detectado en: {nombre_archivo}")
+            # Movemos el archivo a la lista de inválidos
+            carpeta_invalidos = "invalidos"
+            if not os.path.exists(carpeta_invalidos):
+                os.makedirs(carpeta_invalidos)
+            
+            ruta_invalida = os.path.join(carpeta_invalidos, nombre_archivo)
+            shutil.move(ruta_completa, ruta_invalida)
+            print(f"  -> Archivo movido a la carpeta de registros inválidos.")
 
 print(f"\n[INFO] Sistema iniciado. Vigilando {len(nombres_conocidos)} perfiles.\n")
 
