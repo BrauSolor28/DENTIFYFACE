@@ -1,0 +1,21 @@
+# Entornos virtuales (¡Muy importante no subir esto!)
+env/
+venv/
+ENV/
+
+# Archivos temporales de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos de configuración o secretos (por seguridad)
+.env
+
+# Archivos basura del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs y bases de datos locales temporales
+*.log
+*.sqlite3
