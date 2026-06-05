@@ -2,6 +2,9 @@
 
 Sistema automatizado de videovigilancia y reconocimiento facial en tiempo real enfocado en la búsqueda de perfiles activos sin requerir supervisión humana constante. Combina YOLOv8 para la detección espacial con dlib (ResNet-29) para la extracción biométrica, operando 100% on-premise con hardware estándar.
 
+## Video de Demostración
+https://youtu.be/syAlH_rWybE
+
 ---
 
 # 2. Información del Concurso
