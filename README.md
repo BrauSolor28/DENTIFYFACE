@@ -38,7 +38,7 @@ https://youtu.be/syAlH_rWybE
 
 * **Sistema Operativo:** Windows 10/11 o Linux (Ubuntu 22.04+).
 * **Hardware Mínimo:** CPU de 4 núcleos (Ej. AMD Ryzen 5), 8 GB RAM, Cámara Web 640x480. No requiere GPU dedicada.
-* **Software Base:** Python 3.13 (64-bit), MySQL Server (8.x+), Git y Compiladores C++ (Visual Studio Build Tools en Windows / `build-essential cmake` en Linux).
+* **Software Base:** Python 3.13 (64-bit), MySQL Server (10.4.32), Git y Compiladores C++ (Visual Studio Build Tools en Windows / `build-essential cmake` en Linux).
 
 ---
 
