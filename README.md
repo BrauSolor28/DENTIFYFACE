@@ -65,20 +65,27 @@ pip install -r requirements.txt
 
 ---
 
-# 7. Dataset y Modelos
+## 7. Dataset y Modelos
 
-* **Fotografías de Control:** Coloca imágenes estáticas (.jpg, .png) de los perfiles a buscar dentro del directorio `/registrados/`. El nombre del archivo será el nombre registrado en BD (ej. `Juan_Perez.jpg`).
-* **Modelo YOLOv8:** El archivo de pesos afinado (`best.pt`) ya se encuentra incluido en el directorio raíz. Fue entrenado con 3,600 imágenes de Roboflow para detectar exclusivamente rostros humanos.
+* **Modelo YOLOv8:** El archivo de pesos afinado (`best.pt`) ya se encuentra incluido en el directorio raíz. Fue entrenado con 3,647 imágenes de Roboflow para detectar exclusivamente rostros humanos.
+* **Padrón Masivo (Prueba de Estrés):** Para inicializar la base de datos con el padrón de control requerido (>1,000 identidades), el sistema utiliza el dataset público Labeled Faces in the Wild (LFW).
+* **Fotografías de Control Local:** Imágenes estáticas (.jpg, .png) para pruebas en tiempo real se colocan dentro del directorio `/registrados/`. El sistema las sincroniza en caliente (Zero-Shot Learning).
 
 ---
 
-# 8. Ejecución
+## 8. Ejecución
 
-Para iniciar el sistema de vigilancia e ingesta automática, asegúrate de tener tu cámara conectada y ejecuta:
+El sistema cuenta con una arquitectura desacoplada. Para levantar el proyecto por primera vez, ejecuta los siguientes pasos:
 
-```bash
-python src/main.py
-```
+**Paso 1: Sembrar la Base de Datos (Ingesta Masiva)**
+1. Descarga el dataset LFW en su versión alineada desde: `http://vis-www.cs.umass.edu/lfw/lfw-deepfunneled.tgz`
+2. Descomprime el archivo y coloca la carpeta resultante (renombrada como `lfw`) dentro del directorio `scripts/`.
+3. Ejecuta el script de inyección para vectorizar los perfiles directamente en MySQL:
+   `python scripts/ingesta_lfw.py`
+
+**Paso 2: Iniciar el Sistema Principal**
+Asegúrate de tener tu cámara conectada y ejecuta el orquestador:
+`python src/main.py`
 
 ---
 
@@ -107,7 +114,7 @@ python -m unittest discover -s tests
 ```plaintext
 DENTIFYFACE/
 ├── docs/               # Documentación técnica y Ficha de proyecto final (PDF/DOCX)
-├── scripts/            # Scripts DDL (database.sql) para inicializar MySQL
+├── scripts/            # Script DDL (database.sql) y script de ingesta (ingesta_lfw.py)
 ├── src/                # Código fuente principal (main.py)
 ├── tests/              # Pruebas automatizadas y unitarias
 ├── registrados/        # Directorio local de ingesta de identidades (Dataset en vivo)
