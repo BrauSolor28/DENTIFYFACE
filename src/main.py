@@ -1,9 +1,10 @@
 """
-Sistema de Búsqueda Masiva - Módulo de Visión Artificial
+Sistema de Búsqueda Masiva - Módulo de Visión Artificial (DENTIFYFACE)
 ---------------------------------------------------------
 Este script captura video en tiempo real, detecta rostros utilizando
 un modelo YOLOv8 personalizado y compara las codificaciones biométricas
-contra un directorio local, registrando avistamientos positivos en MySQL.
+contra un padrón masivo en MySQL y un directorio local, 
+registrando avistamientos positivos.
 """
 
 import cv2
@@ -11,8 +12,9 @@ import face_recognition
 import time
 import os
 import mysql.connector
-import time
 import shutil
+import json
+import numpy as np
 from ultralytics import YOLO
 
 # =========================================================
@@ -42,11 +44,33 @@ cursor = conexion.cursor()
 print("\n[INFO] Cargando modelo de detección YOLO (best.pt)...")
 modelo_yolo = YOLO('best.pt')
 
-print("\n[INFO] Sincronizando directorio local con base de datos...")
-carpeta_fotos = "registrados"
 nombres_conocidos = []
 encodings_conocidos = []
 nombres_a_ids = {} 
+
+# --- 2.1 Cargar el padrón masivo desde MySQL al instante ---
+print("\n[INFO] Cargando padrón masivo desde MySQL (Esto tomará solo unos segundos)...")
+try:
+    cursor.execute("SELECT id_persona, nombre_completo, vector_biometrico FROM reportes_desaparecidos WHERE vector_biometrico IS NOT NULL")
+    registros_bd = cursor.fetchall()
+    
+    for id_persona, nombre, vector_json in registros_bd:
+        # Convertimos el texto JSON de regreso a la matriz matemática de numpy
+        vector_array = np.array(json.loads(vector_json))
+        encodings_conocidos.append(vector_array)
+        nombres_conocidos.append(nombre)
+        nombres_a_ids[nombre] = id_persona
+        
+    print(f"  -> {len(registros_bd)} perfiles cargados desde MySQL a la memoria RAM.")
+except Exception as e:
+    print(f"[ERROR] No se pudo cargar de BD: {e}")
+
+# --- 2.2 Sincronización en caliente del directorio local (Zero-Shot Learning) ---
+print("\n[INFO] Sincronizando directorio local /registrados/...")
+carpeta_fotos = "registrados"
+
+if not os.path.exists(carpeta_fotos):
+    os.makedirs(carpeta_fotos)
 
 # Lee todas las imágenes del directorio y extrae características faciales
 for nombre_archivo in os.listdir(carpeta_fotos):
@@ -54,23 +78,29 @@ for nombre_archivo in os.listdir(carpeta_fotos):
         nombre_persona = os.path.splitext(nombre_archivo)[0].replace("_", " ")
         ruta_completa = os.path.join(carpeta_fotos, nombre_archivo)
         
+        # Omitimos si ya lo cargamos desde la base de datos para no duplicar trabajo
+        if nombre_persona in nombres_conocidos:
+            continue
+            
         imagen = face_recognition.load_image_file(ruta_completa)
         encodings = face_recognition.face_encodings(imagen)
         
         if len(encodings) > 0:
-            encodings_conocidos.append(encodings[0])
+            vector_actual = encodings[0]
+            encodings_conocidos.append(vector_actual)
             nombres_conocidos.append(nombre_persona)
             
-            # Sincronización con MySQL: Verifica si existe, si no, lo registra
+            # Sincronización con MySQL: Verifica si existe, si no, lo registra con todo y vector
             cursor.execute("SELECT id_persona FROM reportes_desaparecidos WHERE nombre_completo = %s", (nombre_persona,))
             resultado_db = cursor.fetchone()
             
             if not resultado_db:
-                sql_insert = "INSERT INTO reportes_desaparecidos (nombre_completo, nombre_foto) VALUES (%s, %s)"
-                cursor.execute(sql_insert, (nombre_persona, nombre_archivo))
+                vector_json_nuevo = json.dumps(vector_actual.tolist())
+                sql_insert = "INSERT INTO reportes_desaparecidos (nombre_completo, nombre_foto, vector_biometrico) VALUES (%s, %s, %s)"
+                cursor.execute(sql_insert, (nombre_persona, nombre_archivo, vector_json_nuevo))
                 conexion.commit()
                 id_persona = cursor.lastrowid
-                print(f"  -> Nuevo registro creado en BD: {nombre_persona}")
+                print(f"  -> Nuevo registro local creado en BD: {nombre_persona}")
             else:
                 id_persona = resultado_db[0]
             
@@ -127,10 +157,10 @@ while True:
                     # 1. Sacamos las medidas del recorte
                     alto, ancho, _ = rgb_recorte.shape
     
-                    # 2. Le decimos explícitamente: "La cara ocupa todo este cuadrito (arriba, derecha, abajo, izquierda)"
+                    # 2. Le decimos explícitamente a dlib dónde está la cara en el recorte
                     ubicacion_exacta = [(0, ancho, alto, 0)]
     
-                    # 3. Le pasamos esa ubicación para que NO haga la búsqueda doble
+                    # 3. Extracción vectorial optimizada
                     face_encodings_detectados = face_recognition.face_encodings(rgb_recorte, known_face_locations=ubicacion_exacta)
                     
                     if face_encodings_detectados:
@@ -177,10 +207,11 @@ while True:
     tiempo_procesamiento_ms = (tiempo_actual - tiempo_anterior) * 1000
     fps = 1 / (tiempo_actual - tiempo_anterior) if (tiempo_actual - tiempo_anterior) > 0 else 0
     tiempo_anterior = tiempo_actual
+    
     cv2.putText(frame, f"FPS: {int(fps)}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     cv2.putText(frame, f"Latencia: {int(tiempo_procesamiento_ms)} ms", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
 
-    cv2.imshow('Sistema de Búsqueda Masiva', frame)
+    cv2.imshow('Sistema de Busqueda Masiva (DENTIFYFACE)', frame)
 
     if cv2.waitKey(1) & 0xFF == ord('q'): break
 
